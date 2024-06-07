@@ -3,6 +3,7 @@
 #include <capsule.h>
 
 #define CAPSULE_ID_POSITION 0x15
+#define CAPSULE_ID_GUSTAVO_CUSTOM 0x21
 
 #define X_STEP_PIN 12
 #define X_DIR_PIN 11
@@ -13,7 +14,7 @@ AccelStepper stepperX(1, X_STEP_PIN, X_DIR_PIN);
 void handlePacket(uint8_t, uint8_t*, uint32_t);
 CapsuleStatic capsuleRaspberry(handlePacket);
 
-const int stepIncrement = 3;  // Define el tamaño del paso para movimientos incrementales
+// const int stepIncrement = 3;  // Define el tamaño del paso para movimientos incrementales
 const long int limite_safe = 5600;  // Límite seguro para el movimiento del motor
 
 void homing(); 
@@ -21,8 +22,15 @@ void homing();
 struct dataStruct {
   int position;
 };
+ 
+struct dataStructGustavoCustom {
+  int val1;
+  int val2;
+  float val3;
+};
 
 dataStruct lastCmd;
+dataStructGustavoCustom lastCmdGustavoCustom;
 
 void setup() {
   Serial.begin(115200);
@@ -64,22 +72,29 @@ void homing() {
 
 void handlePacket(uint8_t id, uint8_t* data, uint32_t size) {
 
-  memcpy(&lastCmd, data, sizeof(dataStruct));
-
   digitalWrite(LED_BUILTIN, HIGH);
 
   switch (id) {
     case CAPSULE_ID_POSITION:
+      memcpy(&lastCmd, data, sizeof(dataStruct));
       Serial.println("Received packet from Raspberry");
       if (lastCmd.position >= 0 && lastCmd.position <= limite_safe) {
         stepperX.moveTo(lastCmd.position);
         while (stepperX.distanceToGo() != 0) {
           stepperX.run();
         }
-        Serial.println("Movimiento completado a posición: " + String(lastCmd.position));
+        // Serial.println("Movimiento completado a posición: " + String(lastCmd.position));
       } else {
-        Serial.println("Error: Posición fuera de límites");
+        // Serial.println("Error: Posición fuera de límites");
       }
+    break;
+
+    case CAPSULE_ID_GUSTAVO_CUSTOM:
+      memcpy(&lastCmdGustavoCustom, data, sizeof(dataStructGustavoCustom));
+      Serial.println("Received packet from Raspberry Custom Gustavo");
+      Serial.println("Val1: " + String(lastCmdGustavoCustom.val1));
+      Serial.println("Val2: " + String(lastCmdGustavoCustom.val2));
+      Serial.println("Val3: " + String(lastCmdGustavoCustom.val3));
     break;
   }
 

@@ -1,11 +1,11 @@
-#include "Arduino.h"
-#include "AccelStepper.h"
+#include <Arduino.h>
+#include <AccelStepper.h>
 #include <capsule.h>
 
 #define CAPSULE_ID_POSITION 0x15
 
 #define X_STEP_PIN 12
-#define X_DIR_PIN 13
+#define X_DIR_PIN 11
 
 #define HOME_SWITCH_X 7
 
@@ -18,7 +18,6 @@ const long int limite_safe = 5600;  // Límite seguro para el movimiento del mot
 
 void homing(); 
 
-
 struct dataStruct {
   int position;
 };
@@ -26,11 +25,20 @@ struct dataStruct {
 dataStruct lastCmd;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(HOME_SWITCH_X, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
 
-  stepperX.setMaxSpeed(300);
+  stepperX.setMaxSpeed(5000);
   stepperX.setAcceleration(100);
+
+  // stepperX.moveTo(0);
+  // stepperX.runToPosition();
+  // delay(1000);
+  // stepperX.moveTo(10000);
+  // stepperX.runToPosition();
+  // delay(1000);
+
   homing();
 }
 
@@ -41,19 +49,24 @@ void loop() {
 }
 
 void homing() {
+  // Serial.println("Starting homing");
   while (digitalRead(HOME_SWITCH_X) == LOW) {
-    stepperX.moveTo(stepperX.currentPosition() - 1);
-    stepperX.run();
+    // Serial.println("Homing...");
+    // stepperX.moveTo(stepperX.currentPosition() - 10);
+    stepperX.setSpeed(-5000);
+    stepperX.runSpeed();
     delay(1);
   }
   stepperX.setCurrentPosition(0);
-  Serial.println("Homing completado");
+  Serial.println("Homing completed");
 }
 
 
 void handlePacket(uint8_t id, uint8_t* data, uint32_t size) {
 
   memcpy(&lastCmd, data, sizeof(dataStruct));
+
+  digitalWrite(LED_BUILTIN, HIGH);
 
   switch (id) {
     case CAPSULE_ID_POSITION:
@@ -69,4 +82,7 @@ void handlePacket(uint8_t id, uint8_t* data, uint32_t size) {
       }
     break;
   }
+
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
 }
